@@ -11,6 +11,7 @@ import org.springframework.context.annotation.Configuration;
 import org.springframework.data.couchbase.config.AbstractCouchbaseConfiguration;
 import org.springframework.data.couchbase.config.BeanNames;
 import org.springframework.data.couchbase.config.CouchbaseConfigurer;
+import org.testcontainers.containers.GenericContainer;
 import org.testcontainers.couchbase.CouchbaseContainer;
 
 import java.util.List;
@@ -20,7 +21,7 @@ public class DatabaseTestConfiguration extends AbstractCouchbaseConfiguration {
 
     private CouchbaseProperties couchbaseProperties;
 
-    private static CouchbaseContainer<? extends CouchbaseContainer<?>> couchbaseContainer;
+    private static CouchbaseContainerOverrided<? extends CouchbaseContainerOverrided<?>> couchbaseContainer;
 
     public DatabaseTestConfiguration(CouchbaseProperties couchbaseProperties) {
         this.couchbaseProperties = couchbaseProperties;
@@ -57,11 +58,11 @@ public class DatabaseTestConfiguration extends AbstractCouchbaseConfiguration {
         return this;
     }
 
-    private CouchbaseContainer<? extends CouchbaseContainer<?>> getCouchbaseContainer() {
+    private CouchbaseContainerOverrided<? extends CouchbaseContainerOverrided<?>> getCouchbaseContainer() {
         if (couchbaseContainer != null) {
             return couchbaseContainer;
         }
-        couchbaseContainer = new CouchbaseContainer<>("couchbase/server:5.0.1");
+        couchbaseContainer = new CouchbaseContainerOverrided<>("couchbase/server:5.0.1");
         couchbaseContainer
             .withNewBucket(DefaultBucketSettings.builder()
                 .name(getBucketName())
@@ -71,5 +72,18 @@ public class DatabaseTestConfiguration extends AbstractCouchbaseConfiguration {
                 .build());
         couchbaseContainer.start();
         return couchbaseContainer;
+    }
+
+    class CouchbaseContainerOverrided <SELF extends CouchbaseContainerOverrided<SELF>> extends CouchbaseContainer<SELF> {
+
+        public CouchbaseContainerOverrided(String containerName) {
+            super(containerName);
+        }
+
+        @Override
+        protected void configure() {
+            super.configure();
+            addFixedExposedPort(11210, 11210);
+        }
     }
 }
